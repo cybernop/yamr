@@ -6,16 +6,25 @@
 	"service": "app",
 	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
 	// Features to add to the dev container. More info: https://containers.dev/features.
-	// "features": {},
+	"features": {
+		"ghcr.io/devcontainers/features/docker-in-docker:2.10.2": {
+			"version": "latest",
+			"moby": true
+		}
+	},
 	// Configure tool-specific properties.
 	"customizations": {
 		"vscode": {
 			"extensions": [
 				"humao.rest-client",
+				"mhutchie.git-graph",
 				"xyz.local-history"
 			]
 		}
-	}
+	},
+	"mounts": [
+		"source=/var/run/docker.sock,target=/var/run/docker-host.sock,type=bind"
+	]
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [5432],
 	// Use 'postCreateCommand' to run commands after the container is created.

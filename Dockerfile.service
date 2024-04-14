@@ -1,0 +1,23 @@
+FROM golang:alpine as builder
+
+WORKDIR /build
+COPY service /build/
+RUN go build
+
+
+FROM alpine
+
+COPY --from=builder /build/yamr /app/yamr
+WORKDIR /app
+
+ARG POSTGRES_USER
+ARG POSTGRES_PASSWORD
+ARG POSTGRES_DB
+ARG POSTGRES_HOSTNAME
+
+ENV POSTGRES_USER=${POSTGRES_USER:-postgres}
+ENV POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+ENV POSTGRES_DB=${POSTGRES_DB:-readings}
+ENV POSTGRES_HOSTNAME=${POSTGRES_HOSTNAME:-db}
+
+ENTRYPOINT [ "./yamr" ]
