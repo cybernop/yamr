@@ -18,6 +18,10 @@ type reading struct {
 	Reading    float64   `json:"reading"`
 }
 
+type reading_list struct {
+	Readings []reading `json:"readings"`
+}
+
 type kind_list struct {
 	Kinds []string `json:"kinds"`
 }
@@ -103,7 +107,7 @@ func getReadings(c *gin.Context) {
 	}
 
 	// Convert query results to structs
-	var rr []reading
+	var rr reading_list
 	for rows.Next() {
 		var r reading
 		err := rows.Scan(&r.ID, &r.Kind, &r.RecordedOn, &r.Reading)
@@ -112,7 +116,7 @@ func getReadings(c *gin.Context) {
 			return
 		}
 
-		rr = append(rr, r)
+		rr.Readings = append(rr.Readings, r)
 	}
 
 	c.IndentedJSON(http.StatusOK, rr)
