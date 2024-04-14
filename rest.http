@@ -2,11 +2,16 @@
 
 ###
 
+# @name kinds
+GET http://{{host}}/kinds
+
+###
+
 GET http://{{host}}/readings
 
 ###
 
-@kind = gas
+@kind = {{kinds.response.body.kinds[0]}}
 
 GET http://{{host}}/readings?kind={{kind}}
 

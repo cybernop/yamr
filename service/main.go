@@ -18,6 +18,10 @@ type reading struct {
 	Reading    float64   `json:"reading"`
 }
 
+type kind_list struct {
+	Kinds []string `json:"kinds"`
+}
+
 type response_error struct {
 	Error string `json:"error"`
 }
@@ -26,10 +30,38 @@ var db_url = "postgres://" + os.Getenv("POSTGRES_USER") + ":" + os.Getenv("POSTG
 
 func main() {
 	router := gin.Default()
+	router.GET("/kinds", getKinds)
 	router.GET("/readings", getReadings)
 	router.POST("/reading", postReading)
 
 	router.Run("localhost:8080")
+}
+
+func getKinds(c *gin.Context) {
+	// Establish connection
+	conn, err := pgx.Connect(context.Background(), db_url)
+	if err != nil {
+		interal_error(c, "Unable to connect to database", err)
+		return
+	}
+	defer conn.Close(context.Background())
+
+	// Query for kinds
+	rows, err := conn.Query(context.Background(), "SELECT DISTINCT kind from readings")
+	if err != nil {
+		interal_error(c, "Unable to get readings from database", err)
+		return
+	}
+
+	// Convert to kinds
+	var kk kind_list
+	for rows.Next() {
+		var k string
+		rows.Scan(&k)
+		kk.Kinds = append(kk.Kinds, k)
+	}
+
+	c.IndentedJSON(http.StatusOK, kk)
 }
 
 func getReadings(c *gin.Context) {
