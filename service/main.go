@@ -1,23 +1,28 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 )
 
 type reading struct {
-	ID    string  `json:"id"`
-	Type  string  `json:"type"`
-	Date  string  `json:"date"`
-	Value float64 `json:"value"`
+	ID         int       `json:"id"`
+	Kind       string    `json:"kind"`
+	RecordedOn time.Time `json:"recorded_on"`
+	Reading    float64   `json:"reading"`
 }
 
-var readings = []reading{
-	{ID: "1", Type: "gas", Date: "2023-01-01", Value: 1234.56},
-	{ID: "2", Type: "gas", Date: "2023-01-02", Value: 1235.67},
-	{ID: "3", Type: "energy", Date: "2023-01-01", Value: 456.8},
+type response_error struct {
+	Error string `json:"error"`
 }
+
+var db_url = "postgres://" + os.Getenv("POSTGRES_USER") + ":" + os.Getenv("POSTGRES_PASSWORD") + "@" + os.Getenv("POSTGRES_HOSTNAME") + ":5432/" + os.Getenv("POSTGRES_DB")
 
 func main() {
 	router := gin.Default()
@@ -28,21 +33,60 @@ func main() {
 }
 
 func getReadings(c *gin.Context) {
-	q := c.Request.URL.Query()
-	if t := q["type"]; len(t) == 1 {
-		type_ := t[0]
-		var ret []reading
-
-		for _, r := range readings {
-			if r.Type == type_ {
-				ret = append(ret, r)
-			}
-		}
-		c.IndentedJSON(http.StatusOK, ret)
+	// Establish connection
+	conn, err := pgx.Connect(context.Background(), db_url)
+	if err != nil {
+		interal_error(c, "Unable to connect to database", err)
 		return
 	}
+	defer conn.Close(context.Background())
 
-	c.IndentedJSON(http.StatusOK, readings)
+	// Query the readings
+	var rows pgx.Rows
+	if k := c.Request.URL.Query()["kind"]; len(k) > 0 {
+		// Filter by kind
+		if len(k) == 1 {
+			rows, err = conn.Query(context.Background(), "SELECT id, kind, recorded_on, reading FROM readings WHERE kind = $1", k[0])
+			if err != nil {
+				interal_error(c, "Unable to get readings from database", err)
+				return
+			}
+		} else {
+			bad_request(c, "Multiple 'kind' parameters")
+			return
+		}
+	} else {
+		rows, err = conn.Query(context.Background(), "SELECT id, kind, recorded_on, reading FROM readings")
+		if err != nil {
+			interal_error(c, "Unable to get readings from database", err)
+			return
+		}
+	}
+
+	// Convert query results to structs
+	var rr []reading
+	for rows.Next() {
+		var r reading
+		err := rows.Scan(&r.ID, &r.Kind, &r.RecordedOn, &r.Reading)
+		if err != nil {
+			interal_error(c, "Error during type conversion", err)
+			return
+		}
+
+		rr = append(rr, r)
+	}
+
+	c.IndentedJSON(http.StatusOK, rr)
+}
+
+func interal_error(c *gin.Context, msg string, err error) {
+	fmt.Fprintf(os.Stderr, msg+": %v\n", err)
+	c.JSON(http.StatusInternalServerError, response_error{msg})
+}
+
+func bad_request(c *gin.Context, msg string) {
+	fmt.Fprint(os.Stderr, msg+"\n")
+	c.JSON(http.StatusBadRequest, response_error{msg})
 }
 
 func postReading(c *gin.Context) {
