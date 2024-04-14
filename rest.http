@@ -1,0 +1,26 @@
+@host = localhost:8080
+
+###
+
+GET http://{{host}}/readings
+
+###
+
+@kind = gas
+
+GET http://{{host}}/readings?kind={{kind}}
+
+###
+
+GET http://{{host}}/readings?kind={{kind}}&kind={{kind}}
+
+###
+
+POST http://{{host}}/reading
+Content-Type: application/json
+
+{
+    "kind": "electricity",
+    "recordedOn": "2024-01-01T00:00:00Z",
+    "reading": 98798
+}

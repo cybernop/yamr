@@ -14,7 +14,7 @@ import (
 type reading struct {
 	ID         int       `json:"id"`
 	Kind       string    `json:"kind"`
-	RecordedOn time.Time `json:"recorded_on"`
+	RecordedOn time.Time `json:"recordedOn"`
 	Reading    float64   `json:"reading"`
 }
 
@@ -79,9 +79,44 @@ func getReadings(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, rr)
 }
 
+func postReading(c *gin.Context) {
+	// Establish connection
+	conn, err := pgx.Connect(context.Background(), db_url)
+	if err != nil {
+		interal_error(c, "Unable to connect to database", err)
+		return
+	}
+	defer conn.Close(context.Background())
+
+	// Call BindJSON to bind the received JSON to
+	var r reading
+	if err := c.BindJSON(&r); err != nil {
+		bad_request_err(c, "Failed to parse argument", err)
+		return
+	}
+
+	// Build query
+	query := "INSERT INTO readings (kind, recorded_on, reading) VALUES (@kind, @recorded_on, @reading)"
+	args := pgx.NamedArgs{
+		"kind":        r.Kind,
+		"recorded_on": r.RecordedOn,
+		"reading":     r.Reading,
+	}
+
+	// Execute query
+	_, err = conn.Exec(context.Background(), query, args)
+	if err != nil {
+		interal_error(c, "Failed to create new reading", err)
+		return
+	}
+
+	c.IndentedJSON(http.StatusCreated, nil)
+}
+
 func interal_error(c *gin.Context, msg string, err error) {
-	fmt.Fprintf(os.Stderr, msg+": %v\n", err)
-	c.JSON(http.StatusInternalServerError, response_error{msg})
+	m := fmt.Sprintf(msg+": %v", err)
+	fmt.Fprintf(os.Stderr, m+": \n")
+	c.JSON(http.StatusInternalServerError, response_error{m})
 }
 
 func bad_request(c *gin.Context, msg string) {
@@ -89,16 +124,8 @@ func bad_request(c *gin.Context, msg string) {
 	c.JSON(http.StatusBadRequest, response_error{msg})
 }
 
-func postReading(c *gin.Context) {
-	var newReading reading
-
-	// Call BindJSON to bind the received JSON to
-	// newReading.
-	if err := c.BindJSON(&newReading); err != nil {
-		return
-	}
-
-	// Add the new reading to the slice
-	readings = append(readings, newReading)
-	c.IndentedJSON(http.StatusCreated, newReading)
+func bad_request_err(c *gin.Context, msg string, err error) {
+	m := fmt.Sprintf(msg+": %v", err)
+	fmt.Fprintf(os.Stderr, m+": \n")
+	c.JSON(http.StatusBadRequest, response_error{m})
 }
