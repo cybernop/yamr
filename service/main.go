@@ -41,26 +41,33 @@ func getReadings(c *gin.Context) {
 	}
 	defer conn.Close(context.Background())
 
+	// Build query
+	var query string
+	var args pgx.NamedArgs
+
 	// Query the readings
 	var rows pgx.Rows
 	if k := c.Request.URL.Query()["kind"]; len(k) > 0 {
 		// Filter by kind
 		if len(k) == 1 {
-			rows, err = conn.Query(context.Background(), "SELECT id, kind, recorded_on, reading FROM readings WHERE kind = $1", k[0])
-			if err != nil {
-				interal_error(c, "Unable to get readings from database", err)
-				return
+			query = "SELECT id, kind, recorded_on, reading FROM readings WHERE kind = @kind"
+			args = pgx.NamedArgs{
+				"kind": k[0],
 			}
 		} else {
 			bad_request(c, "Multiple 'kind' parameters")
 			return
 		}
 	} else {
-		rows, err = conn.Query(context.Background(), "SELECT id, kind, recorded_on, reading FROM readings")
-		if err != nil {
-			interal_error(c, "Unable to get readings from database", err)
-			return
-		}
+		query = "SELECT id, kind, recorded_on, reading FROM readings"
+		args = pgx.NamedArgs{}
+	}
+
+	// Query for readings
+	rows, err = conn.Query(context.Background(), query, args)
+	if err != nil {
+		interal_error(c, "Unable to get readings from database", err)
+		return
 	}
 
 	// Convert query results to structs
