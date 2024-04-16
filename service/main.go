@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 )
@@ -34,6 +35,11 @@ var db_url = "postgres://" + os.Getenv("POSTGRES_USER") + ":" + os.Getenv("POSTG
 
 func main() {
 	router := gin.Default()
+
+	config := cors.DefaultConfig()
+	config.AllowAllOrigins = true
+	router.Use(cors.New(config))
+
 	router.GET("/kinds", getKinds)
 	router.GET("/readings", getReadings)
 	router.POST("/reading", postReading)
