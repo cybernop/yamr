@@ -7,6 +7,16 @@ GET http://{{host}}/kinds
 
 ###
 
+POST http://{{host}}/kind
+Content-Type: application/json
+
+{
+    "name": "Test",
+    "unit": "tests/s"
+}
+
+###
+
 @kind = {{kinds.response.body.kinds[0].id}}
 
 GET http://{{host}}/readings?kind={{kind}}

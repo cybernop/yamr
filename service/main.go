@@ -25,8 +25,9 @@ type reading_list struct {
 }
 
 type kind struct {
-	ID   int    `json:"id"`
+	Id   int    `json:"id"`
 	Name string `json:"name"`
+	Unit string `json:"unit"`
 }
 
 type kind_list struct {
@@ -47,6 +48,7 @@ func main() {
 	router.Use(cors.New(config))
 
 	router.GET("/kinds", getKinds)
+	router.POST("/kind", postKind)
 	router.GET("/readings", getReadings)
 	router.POST("/reading", postReading)
 
@@ -63,7 +65,7 @@ func getKinds(c *gin.Context) {
 	defer conn.Close(context.Background())
 
 	// Query for kinds
-	rows, err := conn.Query(context.Background(), "SELECT kind_id, kind_name FROM kinds")
+	rows, err := conn.Query(context.Background(), "SELECT kind_id, kind_name, unit FROM kinds")
 	if err != nil {
 		interal_error(c, "Unable to get readings from database", err)
 		return
@@ -73,11 +75,54 @@ func getKinds(c *gin.Context) {
 	var kk kind_list
 	for rows.Next() {
 		var k kind
-		rows.Scan(&k.ID, &k.Name)
+		rows.Scan(&k.Id, &k.Name, &k.Unit)
 		kk.Kinds = append(kk.Kinds, k)
 	}
 
 	c.IndentedJSON(http.StatusOK, kk)
+}
+
+func postKind(c *gin.Context) {
+	// Establish connection
+	conn, err := pgx.Connect(context.Background(), db_url)
+	if err != nil {
+		interal_error(c, "Unable to connect to database", err)
+		return
+	}
+	defer conn.Close(context.Background())
+
+	// Call BindJSON to bind the received JSON to
+	var k kind
+	if err := c.BindJSON(&k); err != nil {
+		bad_request_err(c, "Failed to parse argument", err)
+		return
+	}
+
+	// Build query
+	query := "INSERT INTO kinds (kind_name, unit) VALUES (@name, @unit)"
+	args := pgx.NamedArgs{
+		"name": k.Name,
+		"unit": k.Unit,
+	}
+
+	// Execute query
+	_, err = conn.Exec(context.Background(), query, args)
+	if err != nil {
+		interal_error(c, "Failed to create new kind", err)
+		return
+	}
+
+	// Build query
+	query = "SELECT kind_id, kind_name FROM kinds ORDER BY kind_id DESC LIMIT 1"
+
+	// Query for readings
+	err = conn.QueryRow(context.Background(), query).Scan(&k.Id, &k.Name)
+	if err != nil {
+		interal_error(c, "Unable to get kinds from database", err)
+		return
+	}
+
+	c.IndentedJSON(http.StatusCreated, k)
 }
 
 func getReadings(c *gin.Context) {
