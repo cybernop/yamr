@@ -7,17 +7,9 @@ GET http://{{host}}/kinds
 
 ###
 
-GET http://{{host}}/readings
-
-###
-
-@kind = {{kinds.response.body.kinds[0]}}
+@kind = {{kinds.response.body.kinds[0].id}}
 
 GET http://{{host}}/readings?kind={{kind}}
-
-###
-
-GET http://{{host}}/readings?kind={{kind}}&kind={{kind}}
 
 ###
 
@@ -25,7 +17,7 @@ POST http://{{host}}/reading
 Content-Type: application/json
 
 {
-    "kind": "electricity",
+    "kind_id": 1,
     "recordedOn": "2024-01-01T00:00:00Z",
     "reading": 98798
 }

@@ -19,8 +19,24 @@
 				"humao.rest-client",
 				"mhutchie.git-graph",
 				"xyz.local-history",
-				"ms-vscode.live-server"
-			]
+				"ms-vscode.live-server",
+				"inferrinizzard.prettier-sql-vscode",
+				"mtxr.sqltools",
+				"mtxr.sqltools-driver-pg"
+			],
+			"settings": {
+				"sqltools.connections": [
+					{
+						"previewLimit": 50,
+						"server": "localhost",
+						"port": 5432,
+						"driver": "PostgreSQL",
+						"name": "postgres",
+						"database": "readings",
+						"username": "postgres"
+					},
+				]
+			}
 		}
 	},
 	"mounts": [

@@ -13,18 +13,24 @@ import (
 )
 
 type reading struct {
-	ID         int       `json:"id"`
-	Kind       string    `json:"kind"`
+	KindId     int       `json:"kind_id,omitempty"`
 	RecordedOn time.Time `json:"recordedOn"`
 	Reading    float64   `json:"reading"`
 }
 
 type reading_list struct {
 	Readings []reading `json:"readings"`
+	Kind     string    `json:"kind"`
+	Unit     string    `json:"unit"`
+}
+
+type kind struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
 }
 
 type kind_list struct {
-	Kinds []string `json:"kinds"`
+	Kinds []kind `json:"kinds"`
 }
 
 type response_error struct {
@@ -57,7 +63,7 @@ func getKinds(c *gin.Context) {
 	defer conn.Close(context.Background())
 
 	// Query for kinds
-	rows, err := conn.Query(context.Background(), "SELECT DISTINCT kind from readings")
+	rows, err := conn.Query(context.Background(), "SELECT kind_id, kind_name FROM kinds")
 	if err != nil {
 		interal_error(c, "Unable to get readings from database", err)
 		return
@@ -66,8 +72,8 @@ func getKinds(c *gin.Context) {
 	// Convert to kinds
 	var kk kind_list
 	for rows.Next() {
-		var k string
-		rows.Scan(&k)
+		var k kind
+		rows.Scan(&k.ID, &k.Name)
 		kk.Kinds = append(kk.Kinds, k)
 	}
 
@@ -83,30 +89,30 @@ func getReadings(c *gin.Context) {
 	}
 	defer conn.Close(context.Background())
 
-	// Build query
-	var query string
-	var args pgx.NamedArgs
-
+	var kind string
 	// Query the readings
-	var rows pgx.Rows
-	if k := c.Request.URL.Query()["kind"]; len(k) > 0 {
+	if k := c.Request.URL.Query()["kind"]; len(k) == 1 {
+		kind = k[0]
 		// Filter by kind
 		if len(k) == 1 {
-			query = "SELECT id, kind, recorded_on, reading FROM readings WHERE kind = @kind"
-			args = pgx.NamedArgs{
-				"kind": k[0],
-			}
+
 		} else {
 			bad_request(c, "Multiple 'kind' parameters")
 			return
 		}
 	} else {
-		query = "SELECT id, kind, recorded_on, reading FROM readings"
-		args = pgx.NamedArgs{}
+		bad_request(c, "Incorrect number of 'kind' parameters")
+		return
+	}
+
+	// Build query
+	query := "SELECT recorded_on, reading FROM readings WHERE kind_id = @kind"
+	args := pgx.NamedArgs{
+		"kind": kind,
 	}
 
 	// Query for readings
-	rows, err = conn.Query(context.Background(), query, args)
+	rows, err := conn.Query(context.Background(), query, args)
 	if err != nil {
 		interal_error(c, "Unable to get readings from database", err)
 		return
@@ -116,13 +122,21 @@ func getReadings(c *gin.Context) {
 	var rr reading_list
 	for rows.Next() {
 		var r reading
-		err := rows.Scan(&r.ID, &r.Kind, &r.RecordedOn, &r.Reading)
+		err := rows.Scan(&r.RecordedOn, &r.Reading)
 		if err != nil {
 			interal_error(c, "Error during type conversion", err)
 			return
 		}
 
 		rr.Readings = append(rr.Readings, r)
+	}
+
+	// Query for meta information
+	query = "SELECT kind_name, unit FROM kinds WHERE kind_id = @kind"
+	err = conn.QueryRow(context.Background(), query, args).Scan(&rr.Kind, &rr.Unit)
+	if err != nil {
+		interal_error(c, "Unable to get kind meta information from database", err)
+		return
 	}
 
 	c.IndentedJSON(http.StatusOK, rr)
@@ -145,9 +159,9 @@ func postReading(c *gin.Context) {
 	}
 
 	// Build query
-	query := "INSERT INTO readings (kind, recorded_on, reading) VALUES (@kind, @recorded_on, @reading)"
+	query := "INSERT INTO readings (kind_id, recorded_on, reading) VALUES (@kind_id, @recorded_on, @reading)"
 	args := pgx.NamedArgs{
-		"kind":        r.Kind,
+		"kind_id":     r.KindId,
 		"recorded_on": r.RecordedOn,
 		"reading":     r.Reading,
 	}
@@ -159,7 +173,17 @@ func postReading(c *gin.Context) {
 		return
 	}
 
-	c.IndentedJSON(http.StatusCreated, nil)
+	// Build query
+	query = "SELECT kind_id, recorded_on, reading FROM readings ORDER BY reading_id DESC LIMIT 1"
+
+	// Query for readings
+	err = conn.QueryRow(context.Background(), query).Scan(&r.KindId, &r.RecordedOn, &r.Reading)
+	if err != nil {
+		interal_error(c, "Unable to get readings from database", err)
+		return
+	}
+
+	c.IndentedJSON(http.StatusCreated, r)
 }
 
 func interal_error(c *gin.Context, msg string, err error) {
