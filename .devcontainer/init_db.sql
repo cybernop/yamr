@@ -7,7 +7,8 @@ CREATE TABLE
         kind_id INT GENERATED ALWAYS AS IDENTITY,
         kind_name TEXT NOT NULL,
         unit TEXT NOT NULL,
-        PRIMARY KEY (kind_id)
+        PRIMARY KEY (kind_id),
+        UNIQUE (kind_name)
     );
 
 CREATE TABLE
@@ -17,7 +18,8 @@ CREATE TABLE
         recorded_on DATE NOT NULL,
         reading REAL NOT NULL,
         PRIMARY KEY (reading_id),
-        CONSTRAINT fk_kind FOREIGN KEY (kind_id) REFERENCES kinds (kind_id)
+        CONSTRAINT fk_kind FOREIGN KEY (kind_id) REFERENCES kinds (kind_id),
+        UNIQUE (kind_id, recorded_on)
     );
 
 INSERT INTO
