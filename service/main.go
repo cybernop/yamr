@@ -151,7 +151,7 @@ func getReadings(c *gin.Context) {
 	}
 
 	// Build query
-	query := "SELECT recorded_on, reading FROM readings WHERE kind_id = @kind"
+	query := "SELECT recorded_on, reading FROM readings WHERE kind_id = @kind ORDER BY recorded_on"
 	args := pgx.NamedArgs{
 		"kind": kind,
 	}
