@@ -165,6 +165,7 @@ func getReadings(c *gin.Context) {
 
 	// Convert query results to structs
 	var rr reading_list
+	var previousDate time.Time
 	for rows.Next() {
 		var r reading
 		err := rows.Scan(&r.RecordedOn, &r.Reading)
@@ -173,7 +174,14 @@ func getReadings(c *gin.Context) {
 			return
 		}
 
-		rr.Readings = append(rr.Readings, r)
+		// Normalize readings
+		if !previousDate.IsZero() {
+			diff := r.RecordedOn.Sub(previousDate)
+			days := diff.Hours() / 24
+			r.Reading = r.Reading / days
+			rr.Readings = append(rr.Readings, r)
+		}
+		previousDate = r.RecordedOn
 	}
 
 	// Query for meta information
