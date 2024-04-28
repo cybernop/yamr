@@ -3,7 +3,7 @@
 ###
 
 # @name kinds
-GET http://{{host}}/kinds
+GET http://{{host}}/kind
 
 ###
 
@@ -19,7 +19,7 @@ Content-Type: application/json
 
 @kind = {{kinds.response.body.kinds[0].id}}
 
-GET http://{{host}}/readings?kind={{kind}}
+GET http://{{host}}/reading?kind={{kind}}
 
 ###
 

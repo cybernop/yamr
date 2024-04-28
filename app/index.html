@@ -33,7 +33,7 @@
     });
 
     function get_kinds() {
-      $.getJSON('http://localhost:8080/kinds', function (result) {
+      $.getJSON('http://localhost:8080/kind', function (result) {
         $.each(result.kinds, function (i, field) {
           $('#kinds').append('<div onclick="window.location = \'' + window.location.href.split('?')[0] + '?kind=' + field.id + '\'">' + field.name + '</div>');
         });
@@ -43,7 +43,7 @@
     }
 
     function get_readings(kind) {
-      $.get('http://localhost:8080/readings?kind=' + kind, function (data) {
+      $.get('http://localhost:8080/reading?kind=' + kind, function (data) {
         $(document).ready(function () {
           document.title = 'YAMR - ' + data.kind;
         });

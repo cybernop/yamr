@@ -47,9 +47,9 @@ func main() {
 	config.AllowAllOrigins = true
 	router.Use(cors.New(config))
 
-	router.GET("/kinds", getKinds)
+	router.GET("/kind", getKinds)
 	router.POST("/kind", postKind)
-	router.GET("/readings", getReadings)
+	router.GET("/reading", getReadings)
 	router.POST("/reading", postReading)
 
 	router.Run("localhost:8080")
