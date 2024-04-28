@@ -1,3 +1,4 @@
+import argparse
 from dataclasses import dataclass
 import logging
 from pathlib import Path
@@ -85,9 +86,16 @@ def create_reading(host: str, kind_id: int, recorded_on: str, reading):
         )
 
 
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", type=Path, required=True)
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
     import yaml
 
-    config = yaml.safe_load(Path("db-importer-config.yml").read_text())
+    args = get_args()
+    config = yaml.safe_load(args.config.read_text())
     data = read_data(config["file"], config["data"])
     post_data(data, config["host"])
