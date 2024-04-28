@@ -1,0 +1,11 @@
+FROM python:alpine
+
+WORKDIR /app
+
+COPY importer/requirements.txt /app/requirements.txt
+RUN pip3 install -r requirements.txt
+
+COPY importer/main.py /app/main.py
+
+ENTRYPOINT [ "python", "main.py"]
+CMD [ "--config", "/app/config.yml" ]
