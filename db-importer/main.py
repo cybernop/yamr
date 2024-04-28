@@ -71,6 +71,9 @@ def create_kind(host: str, name: str, unit: str):
 
 
 def get_kind_id(kind: str, kinds: List[str]) -> int | None:
+    if kinds is None:
+        return None
+
     for k in kinds:
         if k["name"] == kind:
             return k["id"]
