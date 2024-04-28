@@ -21,7 +21,11 @@ yamr
 # Go workspace file
 go.work
 
+# Python
+.venv
+
 # VS Code specific
 .history
 
 .env
+*config.yml
