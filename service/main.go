@@ -52,7 +52,7 @@ func main() {
 	router.GET("/reading", getReadings)
 	router.POST("/reading", postReading)
 
-	router.Run("localhost:8080")
+	router.Run(":8080")
 }
 
 func getKinds(c *gin.Context) {
