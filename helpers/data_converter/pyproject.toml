@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "data-converter"
+version = "0.1.0"
+description = ""
+authors = ["Alexander Essenwanger <cibernop@mable-anex.de>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pandas = "^2.2.3"
+openpyxl = "^3.1.5"
+pyyaml = "^6.0.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
